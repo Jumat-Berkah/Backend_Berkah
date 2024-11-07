@@ -2,6 +2,7 @@ package helper
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -20,21 +21,36 @@ func MongoConnect(mconn model.DBInfo) (db *mongo.Database, err error) {
 		mconn.DBString = SRVLookup(mconn.DBString)
 		client, err = mongo.Connect(context.TODO(), options.Client().ApplyURI(mconn.DBString))
 		if err != nil {
-			return
+			return nil, err
 		}
 	}
 	db = client.Database(mconn.DBName)
-	return
+	return db, nil
 }
 
 func SRVLookup(srvuri string) (mongouri string) {
 	atsplits := strings.Split(srvuri, "@")
-	userpass := strings.Split(atsplits[0], "//")[1]
-	mongouri = "mongodb://" + userpass + "@"
+	if len(atsplits) < 2 {
+		fmt.Println("Invalid SRV URI format")
+		return ""
+	}
+
+	userpass := strings.Split(atsplits[0], "//")
+	if len(userpass) < 2 {
+		fmt.Println("Invalid userpass format")
+		return ""
+	}
+
+	mongouri = "mongodb://" + userpass[1] + "@"
 	slashsplits := strings.Split(atsplits[1], "/")
+	if len(slashsplits) < 2 {
+		fmt.Println("Invalid domain or database name format")
+		return ""
+	}
+
 	domain := slashsplits[0]
 	dbname := slashsplits[1]
-	//"mongodb://john:PASSWORD@gdelt-shard-00-00.n1mbb.mongodb.net:27017,gdelt-shard-00-01.n1mbb.mongodb.net:27017,gdelt-shard-00-02.n1mbb.mongodb.net:27017/DATABASE?ssl=true&authSource=admin&replicaSet=atlas-7o9d3y-shard-0"
+
 	r := &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -44,10 +60,13 @@ func SRVLookup(srvuri string) (mongouri string) {
 			return d.DialContext(ctx, network, "8.8.8.8:53")
 		},
 	}
+
 	_, srvs, err := r.LookupSRV(context.Background(), "mongodb", "tcp", domain)
 	if err != nil {
-		panic(err)
+		fmt.Println("Error in SRV Lookup:", err)
+		return ""
 	}
+
 	var srvlist string
 	for _, srv := range srvs {
 		srvlist += strings.TrimSuffix(srv.Target, ".") + ":" + strconv.FormatUint(uint64(srv.Port), 10) + ","
@@ -58,9 +77,11 @@ func SRVLookup(srvuri string) (mongouri string) {
 	for _, txt := range txtrecords {
 		txtlist += txt
 	}
+
 	mongouri = mongouri + strings.TrimSuffix(srvlist, ",") + "/" + dbname + "?ssl=true&" + txtlist
 	return
 }
+
 
 func GetRandomDoc[T any](db *mongo.Database, collection string, size uint) (result []T, err error) {
 	filter := mongo.Pipeline{
