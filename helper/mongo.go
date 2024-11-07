@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"Backend_berkah/model"
 	"context"
 	"fmt"
 	"net"
@@ -8,14 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"Backend_berkah/model"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func MongoConnect(mconn model.DBInfo) (db *mongo.Database, err error) {
+func MongoConnect(mconn model.DBInfo) (*mongo.Database, error) {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(mconn.DBString))
 	if err != nil {
 		mconn.DBString = SRVLookup(mconn.DBString)
@@ -24,33 +23,40 @@ func MongoConnect(mconn model.DBInfo) (db *mongo.Database, err error) {
 			return nil, err
 		}
 	}
-	db = client.Database(mconn.DBName)
+	db := client.Database(mconn.DBName)
 	return db, nil
 }
 
 func SRVLookup(srvuri string) (mongouri string) {
+	// Check if the URI is a valid SRV URI format
 	atsplits := strings.Split(srvuri, "@")
 	if len(atsplits) < 2 {
-		fmt.Println("Invalid SRV URI format")
+		fmt.Println("Invalid SRV URI format: missing '@' separator")
 		return ""
 	}
 
 	userpass := strings.Split(atsplits[0], "//")
 	if len(userpass) < 2 {
-		fmt.Println("Invalid userpass format")
+		fmt.Println("Invalid userpass format: missing '//' separator")
 		return ""
 	}
 
+	// Construct the MongoDB URI with userpass information
 	mongouri = "mongodb://" + userpass[1] + "@"
 	slashsplits := strings.Split(atsplits[1], "/")
 	if len(slashsplits) < 2 {
-		fmt.Println("Invalid domain or database name format")
+		fmt.Println("Invalid domain or database name format: missing '/' separator")
 		return ""
 	}
 
+	// Parse domain and database name
 	domain := slashsplits[0]
 	dbname := slashsplits[1]
 
+	fmt.Println("Parsed domain:", domain)
+	fmt.Println("Parsed database name:", dbname)
+
+	// Resolver setup
 	r := &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -61,26 +67,37 @@ func SRVLookup(srvuri string) (mongouri string) {
 		},
 	}
 
+	// Perform SRV lookup
 	_, srvs, err := r.LookupSRV(context.Background(), "mongodb", "tcp", domain)
 	if err != nil {
 		fmt.Println("Error in SRV Lookup:", err)
 		return ""
 	}
 
+	// Build the SRV list
 	var srvlist string
 	for _, srv := range srvs {
 		srvlist += strings.TrimSuffix(srv.Target, ".") + ":" + strconv.FormatUint(uint64(srv.Port), 10) + ","
 	}
 
-	txtrecords, _ := r.LookupTXT(context.Background(), domain)
+	// Fetch TXT records, if any
+	txtrecords, txtErr := r.LookupTXT(context.Background(), domain)
+	if txtErr != nil {
+		fmt.Println("Error fetching TXT records:", txtErr)
+	}
+
 	var txtlist string
 	for _, txt := range txtrecords {
 		txtlist += txt
 	}
 
+	// Construct the final MongoDB URI
 	mongouri = mongouri + strings.TrimSuffix(srvlist, ",") + "/" + dbname + "?ssl=true&" + txtlist
+	fmt.Println("Constructed MongoDB URI:", mongouri)
+
 	return mongouri
 }
+
 
 
 func GetRandomDoc[T any](db *mongo.Database, collection string, size uint) (result []T, err error) {
