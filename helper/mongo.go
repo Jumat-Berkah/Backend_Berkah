@@ -79,7 +79,7 @@ func SRVLookup(srvuri string) (mongouri string) {
 	}
 
 	mongouri = mongouri + strings.TrimSuffix(srvlist, ",") + "/" + dbname + "?ssl=true&" + txtlist
-	return
+	return mongouri
 }
 
 
