@@ -1,6 +1,9 @@
 # Use an official Go image as a base
 FROM golang:1.20-alpine
 
+# Install essential build tools
+RUN apk update && apk add --no-cache git gcc musl-dev
+
 # Set the working directory
 WORKDIR /app
 
@@ -16,7 +19,7 @@ COPY . .
 # Build the application
 RUN go build -o main .
 
-# Expose the port that the app runs on (adjust as needed)
+# Expose the port that the app runs on
 EXPOSE 8080
 
 # Run the application
