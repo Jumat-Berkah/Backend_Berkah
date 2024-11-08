@@ -14,3 +14,4 @@ var mongoInfo = model.DBInfo{ // menggunakan model.DBinfo
 }
 
 var DB, ErrorMongoconn = helper.MongoConnect(mongoInfo) // menggunakan apdb.MongoConnect
+

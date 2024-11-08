@@ -50,3 +50,9 @@ type LoginRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type Credentials struct {
+	Token   string `json:"token"`
+	Message string `json:"message"`
+	UserID  string `json:"user_id,omitempty"`
+}

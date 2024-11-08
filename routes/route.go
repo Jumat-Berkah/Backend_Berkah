@@ -1,43 +1,56 @@
-package routes
+package route
 
 import (
-	"Backend_berkah/config"
 	"net/http"
 
-	"github.com/gorilla/mux"
+	"Backend_berkah/config"
+	"Backend_berkah/controller"
 )
 
-// Define your handler functions
-func HomeHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Welcome to the GA Backend!"))
-}
+func URL(w http.ResponseWriter, r *http.Request) {
+	// Set Access Control Headers
+	if config.SetAccessControlHeaders(w, r) {
+		return
+	}
 
-func AnotherHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("This is another route!"))
-}
+	// Load environment variables (if necessary)
+	// config.SetEnv()
 
-// URL function to set up and return a router
-func URL() *mux.Router {
-	router := mux.NewRouter()
-
-	// Middleware to handle Access Control Headers
-	router.Use(accessControlMiddleware)
-
-	// Define your routes here
-	router.HandleFunc("/", HomeHandler).Methods("GET")
-	router.HandleFunc("/another", AnotherHandler).Methods("GET")
-
-	return router
-}
-
-// Middleware function to handle Access Control Headers
-func accessControlMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if config.SetAccessControlHeaders(w, r) {
-			return
+	// Route handling based on HTTP method and URL path
+	switch r.Method {
+	case http.MethodGet:
+		switch r.URL.Path {
+		case "/":
+			controller.GetHome(w, r)  // Home handler
+		default:
+			controller.NotFound(w, r)
 		}
-		next.ServeHTTP(w, r)
-	})
+
+	case http.MethodPost:
+		switch r.URL.Path {
+		case "/register":
+			controller.Register(w, r)  // Register a new user
+		case "/login":
+			controller.Login(w, r)  // Login for an existing user
+		default:
+			controller.NotFound(w, r)
+		}
+
+	case http.MethodPut:
+		// if r.URL.Path == "/data" {
+		// 	controller.UpdateRoute(w, r)  // Update existing route data
+		// } else {
+		// 	controller.NotFound(w, r)
+		// }
+
+	case http.MethodDelete:
+		// if r.URL.Path == "/data" {
+		// 	controller.DeleteRoute(w, r)  // Delete route data
+		// } else {
+		// 	controller.NotFound(w, r)
+		// }
+
+	default:
+		controller.NotFound(w, r)
+	}
 }
