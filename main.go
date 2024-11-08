@@ -1,11 +1,14 @@
 package main
 
 import (
-	route "Backend_berkah/routes"
-
-	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"log"
+	"net/http"
+	"Backend_berkah/routes"
 )
 
-func init() {
-	functions.HTTP("jumat_berkah", route.URL)
+func main() {
+	log.Println("Starting server on port 8080...")
+	if err := http.ListenAndServe(":8080", http.HandlerFunc(routes.URL)); err != nil {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }
