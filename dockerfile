@@ -1,8 +1,5 @@
-# Use a Go 1.22 Alpine image as a base
-FROM golang:1.22-alpine
-
-# Install essential build tools and libraries
-RUN apk update && apk add --no-cache git gcc musl-dev build-base openssl-dev
+# Use a Debian-based Go image as a base for broader compatibility
+FROM golang:1.20
 
 # Set the working directory
 WORKDIR /app
