@@ -1,5 +1,5 @@
-# Use an official Go image as a base
-FROM golang:1.20-alpine
+# Use a Go 1.22 Alpine image as a base to match the go.mod version
+FROM golang:1.22-alpine
 
 # Install essential build tools
 RUN apk update && apk add --no-cache git gcc musl-dev
