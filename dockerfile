@@ -1,4 +1,4 @@
-# Use a Debian-based Go image for broader compatibility
+# Use a Debian-based Go image for compatibility
 FROM golang:1.20
 
 # Set the working directory
@@ -10,13 +10,13 @@ COPY go.mod go.sum ./
 # Download dependencies
 RUN go mod download
 
-# Copy the application code
+# Copy the rest of the application code
 COPY . .
 
-# Build the application with verbose output for debugging
-RUN go build -x -o main .
+# Build the application
+RUN go build -o main .
 
-# Expose the port that the app runs on
+# Expose the port the app runs on
 EXPOSE 8080
 
 # Run the application

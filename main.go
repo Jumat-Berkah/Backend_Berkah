@@ -1,9 +1,9 @@
 package main
 
 import (
+	"Backend_berkah/routes"
 	"log"
 	"net/http"
-	"Backend_berkah/routes"
 )
 
 func main() {
