@@ -1,8 +1,8 @@
-# Use a Go 1.22 Alpine image as a base to match the go.mod version
+# Use a Go 1.22 Alpine image as a base
 FROM golang:1.22-alpine
 
-# Install essential build tools
-RUN apk update && apk add --no-cache git gcc musl-dev
+# Install essential build tools and libraries
+RUN apk update && apk add --no-cache git gcc musl-dev build-base openssl-dev
 
 # Set the working directory
 WORKDIR /app
